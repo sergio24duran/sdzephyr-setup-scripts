@@ -1,0 +1,9 @@
+**/build/
+/bootloader/
+/modules/
+/tools/
+/zephyr/
+/.west/
+
+# Uncomment examples folder if you don't want to push it
+# /examples/
