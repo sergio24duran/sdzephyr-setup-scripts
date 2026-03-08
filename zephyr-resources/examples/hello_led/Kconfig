@@ -1,0 +1,70 @@
+# Copyright (c) 2024 SDZephyr
+# SPDX-License-Identifier: Apache-2.0
+
+# ---------------------------------------------------------------------------
+# Kconfig - Kernel Configuration System
+# ---------------------------------------------------------------------------
+# Kconfig is the configuration system used by Zephyr (inherited from the
+# Linux kernel). It allows you to define build-time options that can be
+# enabled/disabled or given values in your prj.conf file.
+#
+# Key concepts:
+#   - Each option is prefixed with CONFIG_ when used in code or prj.conf
+#   - Options can have types: bool, int, string, hex
+#   - Options can have defaults, dependencies (depends on), and auto-selects
+#   - "menuconfig" groups options under a collapsible menu in graphical tools
+#
+# IMPORTANT: When an application provides its own Kconfig file, Zephyr uses
+# it as the ROOT of the entire Kconfig tree. This means we MUST source
+# "Kconfig.zephyr" here to include all of Zephyr's own configuration symbols
+# (GPIO, LOG, SERIAL, etc.). Without this line, those symbols are undefined
+# and the build will fail with "attempt to assign value to undefined symbol".
+#
+# To explore all available options interactively, run:
+#   west build -t menuconfig
+# ---------------------------------------------------------------------------
+
+mainmenu "Hello LED Example"
+
+# Pull in the full Zephyr Kconfig tree (kernel + all drivers + subsystems).
+# This MUST come before any application-specific options that depend on or
+# select Zephyr symbols (e.g. "select LOG").
+source "Kconfig.zephyr"
+
+menuconfig HELLO_LED
+	bool "Hello LED Example Configuration"
+	default y
+	help
+	  Enable configuration options for the Hello LED example.
+	  This demonstrates how to use Kconfig to make your application
+	  configurable at build time.
+
+if HELLO_LED
+
+config HELLO_LED_BLINK_INTERVAL_MS
+	int "LED blink interval in milliseconds"
+	default 1000
+	range 100 10000
+	help
+	  Time in milliseconds between LED state toggles.
+	  A smaller value makes the LED blink faster.
+	  Valid range: 100ms to 10000ms (10 seconds).
+
+config HELLO_LED_GPIO_PIN
+	int "GPIO pin number for the LED"
+	default 14
+	help
+	  The GPIO pin number where the LED is connected.
+	  Default is GPIO14 (common on ESP32 boards). Change this to match
+	  your hardware — e.g. 13 for many Arduino-style boards, or check
+	  your board's documentation for available GPIO pins.
+
+config HELLO_LED_LOG_ENABLED
+	bool "Enable logging output"
+	default y
+	select LOG
+	help
+	  When enabled, the application prints the LED state to the console
+	  on every toggle. Disable this to reduce code size and overhead.
+
+endif # HELLO_LED
