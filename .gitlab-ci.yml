@@ -1,22 +1,27 @@
 stages:
   - mirror
 
+# Mirror the develop branch to GitHub after every merge.
+#
+# Required CI/CD variables (Settings > CI/CD > Variables):
+#   GITHUB_TOKEN    - GitHub personal access token with "repo" scope
+#   GITHUB_REPO     - GitHub repository path, e.g. "myuser/my-repo" (no https://, no .git)
+#
+# The GitHub repo is a public read-only mirror of this GitLab repository.
+# Contributors should open Merge Requests here on GitLab, not on GitHub.
+
 mirror_develop_to_github:
   stage: mirror
   image: alpine:latest
+  variables:
+    # Fetch the full history — shallow clones cannot be pushed to an external remote.
+    GIT_DEPTH: 0
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
-  before_script:
-    - apk add --no-cache git
-    # Configure user for automatic commits
-    - git config --global user.email "ci@gitlab.com"
-    - git config --global user.name "GitLab CI"
   script:
-    # Remove GitHub remote if it already exists
+    - apk add --no-cache git
     - git remote remove github || true
-    # Add GitHub remote using variables
-    - git remote add github https://oauth2:${GITHUB_TOKEN}@${GITHUB_REPO_URL#https://}
-    # Create local 'develop' branch pointing to current commit
+    - git remote add github "https://oauth2:${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git"
     - git checkout -B develop
-    # Force push the 'develop' branch to GitHub
     - git push --force github develop
+    - git push --force github --tags

@@ -1,0 +1,117 @@
+# Copyright (c) 2024 SDZephyr
+# SPDX-License-Identifier: Apache-2.0
+
+# ---------------------------------------------------------------------------
+# Kconfig for the Multithreaded LED Example
+# ---------------------------------------------------------------------------
+# This example demonstrates core RTOS multithreading concepts:
+#   - Thread creation with K_THREAD_DEFINE
+#   - Thread priorities and how the scheduler picks which thread runs
+#   - Semaphores for inter-thread synchronization
+#   - Stack size configuration
+#
+# All timing and pin settings are configurable via Kconfig so you can
+# experiment without modifying source code. Just edit prj.conf and rebuild!
+#
+# IMPORTANT: This file is the root Kconfig for the application. It MUST
+# source "Kconfig.zephyr" to make all Zephyr symbols (GPIO, LOG, etc.)
+# available. Without this, any reference to Zephyr symbols in prj.conf or
+# via "select" will fail with "undefined symbol" errors.
+# ---------------------------------------------------------------------------
+
+mainmenu "Multithreaded LEDs Example"
+
+# Pull in the full Zephyr Kconfig tree before our app-specific options.
+source "Kconfig.zephyr"
+
+menuconfig MULTITHREAD_LEDS
+	bool "Multithreaded LEDs Example Configuration"
+	default y
+	help
+	  Enable configuration options for the multithreaded LED example.
+
+if MULTITHREAD_LEDS
+
+# --- Thread stack sizes ---
+
+config LED_THREAD_STACK_SIZE
+	int "Stack size for each LED thread (bytes)"
+	default 1024
+	range 512 4096
+	help
+	  Each thread gets its own stack. If a thread uses too much stack
+	  (deep call chains, large local variables), it will overflow and
+	  crash. Zephyr can detect this at runtime if CONFIG_THREAD_STACK_GUARD
+	  is enabled. 1024 bytes is sufficient for simple GPIO + logging.
+
+# --- Thread priorities ---
+# In Zephyr, LOWER number = HIGHER priority (for preemptive threads).
+# Cooperative threads use negative priorities.
+# Preemptive threads (priority >= 0) can be interrupted by higher-priority threads.
+
+config LED_A_PRIORITY
+	int "Priority for LED A thread"
+	default 5
+	range 0 15
+	help
+	  Thread priority for LED A. Lower number = higher priority.
+	  If LED A has higher priority than LED B, it will be scheduled first
+	  when both are ready to run. Since both threads spend most of their
+	  time sleeping, priority differences mainly affect which thread
+	  runs first when both wake up at the same instant.
+
+config LED_B_PRIORITY
+	int "Priority for LED B thread"
+	default 7
+	range 0 15
+	help
+	  Thread priority for LED B. A higher number (lower priority) means
+	  this thread yields to LED A when both compete for CPU time.
+	  Try setting both threads to the same priority to see round-robin
+	  scheduling in action.
+
+# --- Blink intervals ---
+
+config LED_A_BLINK_INTERVAL_MS
+	int "LED A blink interval (ms)"
+	default 500
+	range 100 10000
+	help
+	  How often LED A toggles. A different interval from LED B creates
+	  a visually distinct blinking pattern, making it easy to confirm
+	  that both threads are running independently.
+
+config LED_B_BLINK_INTERVAL_MS
+	int "LED B blink interval (ms)"
+	default 1000
+	range 100 10000
+	help
+	  How often LED B toggles. Set this to a different value from LED A
+	  to clearly see independent thread execution.
+
+# --- GPIO pins ---
+
+config LED_A_GPIO_PIN
+	int "GPIO pin for LED A"
+	default 14
+	help
+	  GPIO pin number where LED A is connected.
+
+config LED_B_GPIO_PIN
+	int "GPIO pin for LED B"
+	default 18
+	help
+	  GPIO pin number where LED B is connected.
+
+# --- Synchronization demo ---
+
+config LED_SYNC_ENABLED
+	bool "Enable semaphore synchronization demo"
+	default y
+	help
+	  When enabled, the main thread uses a semaphore to synchronize the
+	  start of both LED threads. Both threads wait for the semaphore
+	  before starting to blink, demonstrating inter-thread synchronization.
+	  Disable this to let threads start immediately at boot.
+
+endif # MULTITHREAD_LEDS
